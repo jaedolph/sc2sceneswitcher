@@ -1,0 +1,38 @@
+
+[project]
+name = "c2sceneswitcher"
+description = "Program for automatically switching OBS scenes when entering a SC2 game or replay"
+version = "0.0.1"
+authors = [
+    { name = "Jaedolph - Lord of Games" }
+]
+dependencies = [
+    "obsws-python",
+    "requests",
+    "pytz",
+    "tabulate",
+    "twitchAPI",
+    "pwinput",
+]
+
+[project.scripts]
+sc2sceneswitcher = "sc2sceneswitcher.__main__:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["sc2sceneswitcher"]
+
+[tool.black]
+line-length = 100
+
+[tool.docformatter]
+wrap-summaries = 100
+wrap-descriptions = 100
+
+[tool.pylint]
+load-plugins = ["pylint.extensions.docparams", "pylint.extensions.docstyle"]
+max-args = 10
+max-attributes = 10
