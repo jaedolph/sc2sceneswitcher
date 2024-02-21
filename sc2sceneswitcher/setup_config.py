@@ -1,16 +1,12 @@
 """Helper program to write config file."""
 
-import asyncio
-
 from pwinput import pwinput
-import pathlib
-
-from twitchAPI.twitch import Twitch
 from twitchAPI.oauth import UserAuthenticator
-from twitchAPI.helper import first
-from twitchAPI.type import TwitchAPIException, AuthScope
+from twitchAPI.twitch import Twitch
+from twitchAPI.type import AuthScope, TwitchAPIException
 
-from sc2sceneswitcher.config import Config, ConfigError, DEFAULT_LAST_GAME_FILE_PATH
+from sc2sceneswitcher.config import DEFAULT_LAST_GAME_FILE_PATH, Config
+from sc2sceneswitcher.exceptions import ConfigError
 
 TARGET_SCOPE = [AuthScope.CHANNEL_READ_PREDICTIONS, AuthScope.CHANNEL_MANAGE_PREDICTIONS]
 
@@ -39,13 +35,13 @@ def input_bool(prompt: str) -> bool:
 def configure_twitch(config: Config) -> Config:
     """Configure twitch application settings.
 
-    :param config: Conifg object to update
+    :param config: Config object to update
     :return: updated Config object
     """
 
     print(
         "1. Create a new application at: https://dev.twitch.tv/console/apps/create\n"
-        '2. Set "Name" to whatever you want e.g. "pysc2sceneswitcher"\n'
+        '2. Set "Name" to whatever you want e.g. "sc2sceneswitcher"\n'
         '3. Add an "OAuth Redirect URL" to http://localhost:17563\n'
         '4. Set "Category" to "Application Integration"\n'
         '5. Set "Client" to "Confidential"\n'
@@ -66,7 +62,7 @@ def configure_twitch(config: Config) -> Config:
 def configure_sc2rs(config: Config) -> Config:
     """Configure SC2ReplayStats settings.
 
-    :param config: Conifg object to update
+    :param config: Config object to update
     :return: updated Config object
     """
 
@@ -93,7 +89,7 @@ def configure_sc2rs(config: Config) -> Config:
 def configure_obs(config: Config) -> Config:
     """Configure OBS settings.
 
-    :param config: Conifg object to update
+    :param config: Config object to update
     :return: updated Config object
     """
 
@@ -170,13 +166,13 @@ async def configure_predictions(config: Config) -> Config:
     if not prediction_title:
         prediction_title = "Streamer win?"
     prediction_win_option = input(
-        "\nWhat would call the option for a win? " "(leave blank to use 'YES'): "
+        "\nWhat would call the option for a win? (leave blank to use 'YES'): "
     )
     if not prediction_win_option:
         prediction_win_option = "YES"
 
     prediction_loss_option = input(
-        "\nWhat would call the option for a loss? " "(leave blank to use 'NO'): "
+        "\nWhat would call the option for a loss? (leave blank to use 'NO'): "
     )
     if not prediction_loss_option:
         prediction_loss_option = "NO"
@@ -253,7 +249,7 @@ async def configure(config_file_path: str) -> None:
     while not twitch_config_valid:
         config = configure_twitch(config)
         try:
-            twitch, config = await authorize_twitch(config)
+            _, config = await authorize_twitch(config)
         except TwitchAPIException as exception:
             print(f"\nERROR: could not configure Twitch API authorization: {exception}\n")
             continue

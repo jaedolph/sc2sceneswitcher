@@ -1,19 +1,17 @@
 """Config class used for storing/validating configuration."""
 
 import configparser
-import re
 import os
 import pathlib
+from typing import Any
+
+from sc2sceneswitcher.exceptions import ConfigError
 
 DEFAULT_CONFIG_FILE_NAME = "sc2sceneswitcher.ini"
 DEFAULT_CONFIG_FILE_PATH = str(pathlib.Path.home() / DEFAULT_CONFIG_FILE_NAME)
 
 DEFAULT_LAST_GAME_FILE_NAME = "last_game.txt"
 DEFAULT_LAST_GAME_FILE_PATH = str(pathlib.Path.home() / DEFAULT_LAST_GAME_FILE_NAME)
-
-
-class ConfigError(Exception):
-    """Custom exception thrown when the configuration is invalid."""
 
 
 # pylint: disable=too-many-public-methods
@@ -62,7 +60,13 @@ class Config:
         except (configparser.Error, AssertionError, ValueError, KeyError) as exp:
             raise ConfigError(exp) from exp
 
-    def is_non_empty_string(self, value):
+    def is_non_empty_string(self, value: Any) -> bool:
+        """Ensure that the value is a non-empty string.
+
+        :param value: value to check
+        :return: True if the value is a non-empty string, false otherwise
+        """
+
         if not isinstance(value, str):
             return False
         if not value:

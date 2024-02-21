@@ -34,5 +34,11 @@ wrap-descriptions = 100
 
 [tool.pylint]
 load-plugins = ["pylint.extensions.docparams", "pylint.extensions.docstyle"]
-max-args = 10
-max-attributes = 10
+
+[[tool.mypy.overrides]]
+module = "obsws_python"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pwinput"
+ignore_missing_imports = true
