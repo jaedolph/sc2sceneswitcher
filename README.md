@@ -19,9 +19,9 @@ Installation has been tested on Fedora 38 using python 3.11 but should work on o
 # install using pip
 python3 -m pip install . --user
 # run configuration utility
-sc2replaystats --configure
+sc2sceneswitcher --configure
 # run the program
-sc2replaystats
+sc2sceneswitcher
 ```
 
 ## Install on Windows
@@ -39,14 +39,14 @@ Installation has been tested on Windows 11.
 The application can be configured using a configuration helper utility by adding the `--configure`
 flag to the program.
 ```
-sc2replaystats --configure
+sc2sceneswitcher --configure
 ```
 
 ## Configuration example
 
 ```ini
 [TWITCH]
-# oauth configuration (it is recommended to run `sc2replaystats --configure` to create these)
+# oauth configuration (it is recommended to run `sc2sceneswitcher --configure` to create these)
 client_id = 1234567890abcdefghijklmnopqrst # client id of custom twitch application
 client_secret = abcdefghijklmnopqrst1234567890 # client secret of twitch application
 broadcaster_name = jaedolph # username (not display name) of your channel
