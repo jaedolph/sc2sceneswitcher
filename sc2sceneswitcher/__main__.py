@@ -6,6 +6,7 @@ import logging
 import re
 import signal
 import sys
+import os
 import traceback
 from time import sleep
 from types import FrameType
@@ -26,6 +27,16 @@ LOG = logging.getLogger(__name__)
 
 POLL_INTERVAL = 1
 RETRY_INTERVAL = 5
+
+
+def custom_exit(return_code: int) -> None:
+    """Custom exit routine that ensures the console window doesn't close immediately on Windows.
+
+    :param return_code: the return code to set on exit
+    """
+    if os.name == "nt":
+        input("Press `ENTER` to exit")
+    sys.exit(return_code)
 
 
 class Runner:
@@ -56,7 +67,7 @@ class Runner:
             LOG.debug("Disconnecting OBS websocket")
             self.switcher.obs_ws_client.disconnect()
         LOG.info("Exiting")
-        sys.exit(0)
+        custom_exit(0)
 
     async def start_prediction(self) -> None:
         """Start a new prediction for the outcome of the SC2 game."""
@@ -170,9 +181,9 @@ class Runner:
                 await self.poll()
             except Exception as exp:  # pylint: disable=broad-exception-caught
                 if LOG.level == logging.DEBUG:
-                    LOG.exception("Exception during poll loop: %s", exp)
+                    LOG.exception("Exception during poll loop: %s %s", type(exp).__name__, exp)
                 else:
-                    LOG.error("Exception during poll loop: %s", exp)
+                    LOG.error("Exception during poll loop: %s %s", type(exp).__name__, exp)
             sleep(POLL_INTERVAL)
 
 
@@ -189,7 +200,7 @@ def load_config(config_file_path: str) -> Config:
         config.load_config()
     except ConfigError as exp:
         LOG.error("Invalid config: %s", exp)
-        sys.exit(1)
+        custom_exit(1)
 
     return config
 
@@ -205,12 +216,12 @@ def run_setup_config(config_file_path: str) -> None:
         asyncio.run(setup_config.configure(config_file_path))
     except KeyboardInterrupt:
         LOG.info("Exiting")
-        sys.exit(0)
+        custom_exit(0)
     except Exception as exp:  # pylint: disable=broad-exception-caught
         traceback.print_tb(exp.__traceback__)
         print(f"Fatal exception occurred: {exp}")
-        sys.exit(1)
-    sys.exit(0)
+        custom_exit(1)
+    custom_exit(0)
 
 
 class NoPasswordFilter(logging.Filter):  # pylint: disable=too-few-public-methods

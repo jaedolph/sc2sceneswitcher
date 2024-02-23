@@ -1,6 +1,6 @@
 
 [project]
-name = "c2sceneswitcher"
+name = "sc2sceneswitcher"
 description = "Program for automatically switching OBS scenes when entering a SC2 game or replay"
 version = "0.0.1"
 authors = [

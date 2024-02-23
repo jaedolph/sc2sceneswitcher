@@ -95,8 +95,9 @@ def configure_obs(config: Config) -> Config:
 
     print(
         '1. Open OBS and go to "Tools" -> "WebSocket Server Settings"\n'
-        '2. Change "Server Port" and "Server Password" if required\n'
-        '3. Click "Show Connect Info"'
+        '2. Ensure "Enable WebSocket server" is ticked\n'
+        '3. Change "Server Port" and "Server Password" if required\n'
+        '4. Click "Show Connect Info"'
     )
     input("\nPress `ENTER` when complete.")
     print("\n" * 5)
@@ -108,7 +109,7 @@ def configure_obs(config: Config) -> Config:
         except ValueError:
             print("ERROR: please enter a valid port number")
             obs_websocket_port = None
-    config.obs_websocket_password = pwinput('Copy and paste the "Server Password" here')
+    config.obs_websocket_password = pwinput('Copy and paste the "Server Password" here: ')
     print("\n" * 5)
     config.in_game_scene = input(
         'What is the name of your "in game" OBS scene? e.g. "starcraft2": '

@@ -124,6 +124,7 @@ class SC2ReplayStats:
                     ]
                 )
             message += tabulate(players)
+            LOG.debug("Replay info:\n%s", message)
             return message
         except (ValueError, KeyError) as exp:
             LOG.error("failed to parse replay from SC2ReplayStats: %s", exp)
@@ -147,6 +148,7 @@ class SC2ReplayStats:
             return False
 
         # write replay info to file
+        LOG.info("Writing replay info to %s", self.last_game_file_path)
         with open(self.last_game_file_path, "w", encoding="utf-8") as file:
             file.write(replay_info)
 

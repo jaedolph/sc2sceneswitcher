@@ -63,6 +63,9 @@ class Switcher:
                 assert self.obs_ws_client is not None
                 self.obs_ws_client.set_current_program_scene(self.config.out_of_game_scene)
                 break
+            except obs.error.OBSSDKError as exp:
+                LOG.error("Failed to switch scene: %s", exp)
+                break
             except (BrokenPipeError, AssertionError) as exp:
                 LOG.info("Failed to switch scene: %s", exp)
                 self.reconnect()
@@ -76,6 +79,9 @@ class Switcher:
             try:
                 assert self.obs_ws_client is not None
                 self.obs_ws_client.set_current_program_scene(self.config.in_game_scene)
+                break
+            except obs.error.OBSSDKError as exp:
+                LOG.error("Failed to switch scene: %s", exp)
                 break
             except (BrokenPipeError, AssertionError) as exp:
                 LOG.info("Failed to switch scene: %s", exp)

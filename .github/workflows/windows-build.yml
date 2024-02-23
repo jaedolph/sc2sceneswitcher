@@ -1,0 +1,29 @@
+name: Release Windows binaries
+
+on:
+  release:
+    types: [published]
+jobs:
+  build:
+    runs-on: 'windows-latest'
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
+
+    - run: pip install . nuitka
+    - name: Build Windows binaries
+      run: |
+        nuitka --standalone --output-dir=dist/sc2sceneswitcher --include-package-data=sc2sceneswitcher -o sc2sceneswitcher.exe --remove-output --assume-yes-for-downloads .\sc2sceneswitcher\__main__.py
+        copy .\windows\* .\dist\sc2sceneswitcher
+        cd dist
+        powershell Compress-Archive sc2sceneswitcher sc2sceneswitcher-${{github.ref_name }}-windows-amd64.zip
+    - name: Upload release artifacts
+      run: |
+        gh release upload ${{github.event.release.tag_name}} dist/sc2sceneswitcher-${{github.ref_name }}-windows-amd64.zip
+      env:
+        GITHUB_TOKEN: ${{ github.TOKEN }}
+      shell: bash
