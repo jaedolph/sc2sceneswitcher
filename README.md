@@ -7,7 +7,7 @@ Features:
 * Auto start and payout channel point predictions (must be an Affiliate or Partner to use this feature).
 * Look up and display SC2ReplayStats info after a game (must have a Sc2ReplayStats account and have the auto uploader
   running to use this feature). The replay info can be displayed by adding a "Text" source with "Read from file" and
-  setting the path to "C:/Users/your-username/last_game.txt" (or whatever path you set in the configuration).
+  setting the path to "~/last_game.txt" (or whatever path you set in the configuration).
 
 
 # Installation
@@ -67,4 +67,30 @@ websocket_server_port = 4455 # port for the OBS websocket connection
 websocket_server_password = 1234567890abcdef # password for the OBS websocket connection
 in_game_scene = starcraft2 # name of in game scene in OBS
 out_of_game_scene = just-chatting # name of out of game scene in OBS
+```
+
+# Running with Podman
+
+Install using pip to get the configuration utility
+```
+python3 -m pip install . --user
+sc2sceneswitcher --configure
+```
+Ensure you use `/tmp/last_game.txt` as the value for `Where would you like the post game stats to be saved?`
+
+
+To run using podman you need to use `podman unshare` to set the correct permissions on the `last_game.txt` file:
+```bash
+# create last_game.txt with correct permissions for rootless podman
+export LAST_GAME_FILE=~/Documents/twitch/obs/last_game.txt
+touch $LAST_GAME_FILE
+podman unshare chown 1001:1001 $LAST_GAME_FILE
+# run container (need to use --net=host to access the SC2 client API and OBS websocket on 127.0.0.1)
+podman run \
+  -d \
+  --name sc2sceneswitcher \
+  --net=host \
+  -v ~/sc2sceneswitcher.ini:/usr/src/app/sc2sceneswitcher.ini:z \
+  -v $LAST_GAME_FILE:/tmp/last_game.txt:z \
+  docker.io/jaedolph/sc2sceneswitcher:latest
 ```
