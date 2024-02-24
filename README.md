@@ -2,8 +2,8 @@
 
 Auto switch OBS scenes and create channel point predictions when joining a StarCraft II game.
 
-Features:
-* Auto switch scene in OBS when entering and exiting a game (currently does not support StreamlabsOBS).
+Features (all of these can be enabled or disabled as needed in configuration):
+* Auto switch scene in OBS or Streamlabs Desktop (SLOBS) when entering and exiting a game
 * Auto start and payout channel point predictions (must be an Affiliate or Partner to use this feature).
 * Look up and display SC2ReplayStats info after a game (must have a Sc2ReplayStats account and have the auto uploader
   running to use this feature). The replay info can be displayed by adding a "Text" source with "Read from file" and
@@ -46,6 +46,7 @@ sc2sceneswitcher --configure
 
 ```ini
 [TWITCH]
+enabled = yes # enable twitch integration for creating and paying out predictions for each game
 # oauth configuration (it is recommended to run `sc2sceneswitcher --configure` to create these)
 client_id = 1234567890abcdefghijklmnopqrst # client id of custom twitch application
 client_secret = abcdefghijklmnopqrst1234567890 # client secret of twitch application
@@ -59,10 +60,13 @@ prediction_win_option = YES # prediction option that will get payed out after a 
 prediction_loss_option = NO # prediction option that will get payed out after a loss
 
 [SC2_REPLAY_STATS]
+enabled = yes # enable sc2replaystats features
 auth_key = qwertyuiopasdfghjkl1234567890asdfghjkllk;a539704bcdfaca203df520c98e74c4c721c47f50;1670112810 # sc2replaystats api token
 last_game_file_path = C:\Users\jaedolph\last_game.txt # path that last replay info will be saved
 
 [OBS]
+enabled = yes # enable scene switching
+switcher_websocket_type = OBS # set the type of websocket for your streaming program. Can be "OBS" or "STREAMLABS".
 websocket_server_port = 4455 # port for the OBS websocket connection
 websocket_server_password = 1234567890abcdef # password for the OBS websocket connection
 in_game_scene = starcraft2 # name of in game scene in OBS
