@@ -30,7 +30,7 @@ class Config:
         """Creates sections so new config can be created."""
         self.config.add_section("TWITCH")
         self.config.add_section("SC2_REPLAY_STATS")
-        self.config.add_section("OBS")
+        self.config.add_section("SCENE_SWITCHER")
 
     def load_config(self) -> None:
         """Creates sections so new config can be created."""
@@ -44,19 +44,25 @@ class Config:
         """Validates the [SC2_REPLAY_STATS] section of the config."""
         try:
             assert self.config.has_section("SC2_REPLAY_STATS")
-            assert self.is_non_empty_string(self.sc2rs_authkey)
-            assert self.is_non_empty_string(self.last_game_file_path)
+            assert isinstance(self.sc2rs_enabled, bool)
+            if self.sc2rs_enabled:
+                assert self.is_non_empty_string(self.sc2rs_authkey)
+                assert self.is_non_empty_string(self.last_game_file_path)
         except (configparser.Error, AssertionError, ValueError, KeyError) as exp:
             raise ConfigError(exp) from exp
 
-    def validate_obs_section(self) -> None:
-        """Validates the [OBS] section of the config."""
+    def validate_switcher_section(self) -> None:
+        """Validates the [SCENE_SWITCHER] section of the config."""
         try:
-            assert self.config.has_section("OBS")
-            assert isinstance(self.obs_websocket_port, int)
-            assert self.is_non_empty_string(self.obs_websocket_password)
-            assert self.is_non_empty_string(self.in_game_scene)
-            assert self.is_non_empty_string(self.out_of_game_scene)
+            assert self.config.has_section("SCENE_SWITCHER")
+            assert isinstance(self.switcher_enabled, bool)
+            if self.switcher_enabled:
+                assert self.is_non_empty_string(self.switcher_websocket_type)
+                assert self.switcher_websocket_type in ["OBS", "STREAMLABS"]
+                assert isinstance(self.switcher_websocket_port, int)
+                assert self.is_non_empty_string(self.switcher_websocket_password)
+                assert self.is_non_empty_string(self.in_game_scene)
+                assert self.is_non_empty_string(self.out_of_game_scene)
         except (configparser.Error, AssertionError, ValueError, KeyError) as exp:
             raise ConfigError(exp) from exp
 
@@ -80,20 +86,22 @@ class Config:
 
         try:
             assert self.config.has_section("TWITCH")
-            assert self.is_non_empty_string(self.client_id)
-            assert self.is_non_empty_string(self.client_secret)
-            assert self.is_non_empty_string(self.broadcaster_name)
-            assert self.is_non_empty_string(self.auth_token)
-            assert self.is_non_empty_string(self.refresh_token)
-            assert self.is_non_empty_string(self.prediction_title)
-            assert self.is_non_empty_string(self.prediction_win_option)
-            assert self.is_non_empty_string(self.prediction_loss_option)
+            assert isinstance(self.twitch_enabled, bool)
+            if self.twitch_enabled:
+                assert self.is_non_empty_string(self.client_id)
+                assert self.is_non_empty_string(self.client_secret)
+                assert self.is_non_empty_string(self.broadcaster_name)
+                assert self.is_non_empty_string(self.auth_token)
+                assert self.is_non_empty_string(self.refresh_token)
+                assert self.is_non_empty_string(self.prediction_title)
+                assert self.is_non_empty_string(self.prediction_win_option)
+                assert self.is_non_empty_string(self.prediction_loss_option)
         except (configparser.Error, AssertionError, ValueError, KeyError) as exp:
             raise ConfigError(exp) from exp
 
     def validate_config(self) -> None:
         """Validates that the current config."""
-        self.validate_obs_section()
+        self.validate_switcher_section()
         self.validate_sc2rs_section()
         self.validate_twitch_section()
 
@@ -104,6 +112,15 @@ class Config:
             self.config.write(config_file)
 
     # pylint: disable=missing-function-docstring
+
+    @property
+    def sc2rs_enabled(self) -> bool:
+        return self.config.getboolean("SC2_REPLAY_STATS", "ENABLED")
+
+    @sc2rs_enabled.setter
+    def sc2rs_enabled(self, value: bool) -> None:
+        self.config["SC2_REPLAY_STATS"]["ENABLED"] = "yes" if value else "no"
+
     @property
     def sc2rs_authkey(self) -> str:
         return self.config["SC2_REPLAY_STATS"]["AUTH_KEY"]
@@ -119,6 +136,14 @@ class Config:
     @last_game_file_path.setter
     def last_game_file_path(self, value: str) -> None:
         self.config["SC2_REPLAY_STATS"]["LAST_GAME_FILE_PATH"] = value
+
+    @property
+    def twitch_enabled(self) -> bool:
+        return self.config.getboolean("TWITCH", "ENABLED")
+
+    @twitch_enabled.setter
+    def twitch_enabled(self, value: bool) -> None:
+        self.config["TWITCH"]["ENABLED"] = "yes" if value else "no"
 
     @property
     def auth_token(self) -> str:
@@ -185,36 +210,52 @@ class Config:
         self.config["TWITCH"]["PREDICTION_LOSS_OPTION"] = value
 
     @property
-    def obs_websocket_port(self) -> int:
-        return self.config.getint("OBS", "WEBSOCKET_SERVER_PORT")
+    def switcher_enabled(self) -> bool:
+        return self.config.getboolean("SCENE_SWITCHER", "ENABLED")
 
-    @obs_websocket_port.setter
-    def obs_websocket_port(self, value: int) -> None:
-        assert isinstance(value, int)
-        self.config["OBS"]["WEBSOCKET_SERVER_PORT"] = str(value)
+    @switcher_enabled.setter
+    def switcher_enabled(self, value: bool) -> None:
+        self.config["SCENE_SWITCHER"]["ENABLED"] = "yes" if value else "no"
 
     @property
-    def obs_websocket_password(self) -> str:
-        return self.config["OBS"]["WEBSOCKET_SERVER_PASSWORD"]
+    def switcher_websocket_type(self) -> str:
+        return self.config["SCENE_SWITCHER"]["WEBSOCKET_TYPE"]
 
-    @obs_websocket_password.setter
-    def obs_websocket_password(self, value: str) -> None:
-        self.config["OBS"]["WEBSOCKET_SERVER_PASSWORD"] = value
+    @switcher_websocket_type.setter
+    def switcher_websocket_type(self, value: str) -> None:
+        self.config["SCENE_SWITCHER"]["WEBSOCKET_TYPE"] = value
+
+    @property
+    def switcher_websocket_port(self) -> int:
+        return self.config.getint("SCENE_SWITCHER", "WEBSOCKET_SERVER_PORT")
+
+    @switcher_websocket_port.setter
+    def switcher_websocket_port(self, value: int) -> None:
+        assert isinstance(value, int)
+        self.config["SCENE_SWITCHER"]["WEBSOCKET_SERVER_PORT"] = str(value)
+
+    @property
+    def switcher_websocket_password(self) -> str:
+        return self.config["SCENE_SWITCHER"]["WEBSOCKET_SERVER_PASSWORD"]
+
+    @switcher_websocket_password.setter
+    def switcher_websocket_password(self, value: str) -> None:
+        self.config["SCENE_SWITCHER"]["WEBSOCKET_SERVER_PASSWORD"] = value
 
     @property
     def in_game_scene(self) -> str:
-        return self.config["OBS"]["IN_GAME_SCENE"]
+        return self.config["SCENE_SWITCHER"]["IN_GAME_SCENE"]
 
     @in_game_scene.setter
     def in_game_scene(self, value: str) -> None:
-        self.config["OBS"]["IN_GAME_SCENE"] = value
+        self.config["SCENE_SWITCHER"]["IN_GAME_SCENE"] = value
 
     @property
     def out_of_game_scene(self) -> str:
-        return self.config["OBS"]["OUT_OF_GAME_SCENE"]
+        return self.config["SCENE_SWITCHER"]["OUT_OF_GAME_SCENE"]
 
     @out_of_game_scene.setter
     def out_of_game_scene(self, value: str) -> None:
-        self.config["OBS"]["OUT_OF_GAME_SCENE"] = value
+        self.config["SCENE_SWITCHER"]["OUT_OF_GAME_SCENE"] = value
 
     # pylint: disable=

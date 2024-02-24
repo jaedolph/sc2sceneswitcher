@@ -39,6 +39,13 @@ def configure_twitch(config: Config) -> Config:
     :return: updated Config object
     """
 
+    config.twitch_enabled = input_bool(
+        "Would you like automatically create predictions on Twitch for each game? (yes/no): "
+    )
+    if not config.twitch_enabled:
+        # don't configure twitch if the user doesn't need it
+        return config
+
     print(
         "1. Create a new application at: https://dev.twitch.tv/console/apps/create\n"
         '2. Set "Name" to whatever you want e.g. "sc2sceneswitcher"\n'
@@ -66,6 +73,13 @@ def configure_sc2rs(config: Config) -> Config:
     :return: updated Config object
     """
 
+    config.sc2rs_enabled = input_bool(
+        "Would you like to enable integration with SC2ReplayStats? (yes/no): "
+    )
+    if not config.sc2rs_enabled:
+        # don't configure SC2ReplayStats if the user doesn't need it
+        return config
+
     print(
         "1. Sign in to https://sc2replaystats.com\n"
         '2. Navigate to "My Account" -> "Settings" -> "API Access"\n'
@@ -86,36 +100,71 @@ def configure_sc2rs(config: Config) -> Config:
     return config
 
 
-def configure_obs(config: Config) -> Config:
-    """Configure OBS settings.
+def configure_switcher(config: Config) -> Config:
+    """Configure scene switcher settings.
 
     :param config: Config object to update
     :return: updated Config object
     """
 
-    print(
-        '1. Open OBS and go to "Tools" -> "WebSocket Server Settings"\n'
-        '2. Ensure "Enable WebSocket server" is ticked\n'
-        '3. Change "Server Port" and "Server Password" if required\n'
-        '4. Click "Show Connect Info"'
+    config.switcher_enabled = input_bool(
+        "Would you like to enable automatic scene switching? (yes/no): "
     )
+    if not config.switcher_enabled:
+        # don't configure the scene switcher if the user doesn't need it
+        return config
+
+    use_obs = False
+    use_streamlabs = False
+    while use_obs == use_streamlabs:
+        use_obs = input_bool("\nDo you use OBS? (yes/no): ")
+        if use_obs:
+            break
+        use_streamlabs = input_bool("\nDo you use Streamlabs Desktop (SLOBS)? (yes/no): ")
+        if use_obs == use_streamlabs:
+            print("\nERROR: you must select OBS or Streamlabs Desktop")
+
+    if use_obs:
+        config.switcher_websocket_type = "OBS"
+        instructions = (
+            '1. Open OBS and go to "Tools" -> "WebSocket Server Settings"\n'
+            '2. Ensure "Enable WebSocket server" is ticked\n'
+            '3. Change "Server Port" and "Server Password" if required\n'
+            '4. Click "Show Connect Info"'
+        )
+        port_name = "Server Port"
+        password_name = "Server Password"
+    else:
+        config.switcher_websocket_type = "STREAMLABS"
+        instructions = (
+            '1. Open Streamlabs desktop and go to "Settings" -> "Remote Control"\n'
+            '2. Click the "Click to reveal" image\n'
+            '3. Click "Show details"\n'
+            "4. Toggle visability of the API token"
+        )
+        port_name = "Port"
+        password_name = "API token"
+
+    print("\n" * 5)
+    print(instructions)
+
     input("\nPress `ENTER` when complete.")
     print("\n" * 5)
-    obs_websocket_port = None
-    while obs_websocket_port is None:
-        obs_websocket_port = input('\nCopy and paste the "Server Port" here: ')
+    switcher_websocket_port = None
+    while switcher_websocket_port is None:
+        switcher_websocket_port = input(f'\nCopy and paste the "{port_name}" here: ')
         try:
-            config.obs_websocket_port = int(obs_websocket_port)
+            config.switcher_websocket_port = int(switcher_websocket_port)
         except ValueError:
             print("ERROR: please enter a valid port number")
-            obs_websocket_port = None
-    config.obs_websocket_password = pwinput('Copy and paste the "Server Password" here: ')
+            switcher_websocket_port = None
+
+    config.switcher_websocket_password = pwinput(f'Copy and paste the "{password_name}" here: ')
+
     print("\n" * 5)
-    config.in_game_scene = input(
-        'What is the name of your "in game" OBS scene? e.g. "starcraft2": '
-    )
+    config.in_game_scene = input('What is the name of your "in game" scene? e.g. "starcraft2": ')
     config.out_of_game_scene = input(
-        'What is the name of your "out of game" OBS scene? e.g. "camera": '
+        'What is the name of your "out of game" scene? e.g. "camera": '
     )
     print("\n" * 5)
     return config
@@ -205,21 +254,21 @@ async def configure(config_file_path: str) -> None:
         config_valid = False
 
     print("\n" * 5)
-    print("OBS SETUP")
+    print("SCENE SWITCHER SETUP")
     print("\n--------------------------")
-    obs_config_valid = False
+    switcher_config_valid = False
     if config_valid:
-        obs_config_valid = not input_bool(
-            "OBS configuration is valid, would you like to update it? (yes/no): "
+        switcher_config_valid = not input_bool(
+            "Scene switcher configuration is valid, would you like to update it? (yes/no): "
         )
-    while not obs_config_valid:
-        config = configure_obs(config)
+    while not switcher_config_valid:
+        config = configure_switcher(config)
         try:
-            config.validate_obs_section()
-            obs_config_valid = True
+            config.validate_switcher_section()
+            switcher_config_valid = True
         except ConfigError as exception:
             print(f"\nERROR: invalid config {exception}\n")
-            obs_config_valid = False
+            switcher_config_valid = False
 
     print("\n" * 5)
     print("SC2REPLAYSTATS SETUP")
@@ -249,16 +298,18 @@ async def configure(config_file_path: str) -> None:
         )
     while not twitch_config_valid:
         config = configure_twitch(config)
-        try:
-            _, config = await authorize_twitch(config)
-        except TwitchAPIException as exception:
-            print(f"\nERROR: could not configure Twitch API authorization: {exception}\n")
-            continue
+        if config.twitch_enabled:
+            try:
+                _, config = await authorize_twitch(config)
+            except TwitchAPIException as exception:
+                print(f"\nERROR: could not configure Twitch API authorization: {exception}\n")
+                continue
 
-        print("\n" * 5)
-        print("PREDICTIONS SETUP")
-        print("\n--------------------------")
-        config = await configure_predictions(config)
+            print("\n" * 5)
+            print("PREDICTIONS SETUP")
+            print("\n--------------------------")
+            config = await configure_predictions(config)
+
         try:
             config.validate_twitch_section()
             twitch_config_valid = True
