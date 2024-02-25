@@ -326,7 +326,7 @@ def main() -> None:
         log_level = logging.DEBUG
 
     if args.log_file:
-        log_handlers.append(logging.FileHandler(args.log_file))
+        log_handlers.append(logging.FileHandler(args.log_file, encoding='utf8'))
 
     # add a filter to not log the OBS websocket password if we are not debug logging.
     if not args.debug:

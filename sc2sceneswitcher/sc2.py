@@ -57,7 +57,7 @@ def get_game_details() -> Optional[Game]:
         req = requests.get("http://127.0.0.1:6119/game", timeout=5)
         req.raise_for_status()
         game_json = req.json()
-        LOG.debug(game_json)
+        LOG.debug("game info: %s", game_json)
 
         # check if this is a replay
         is_replay = bool(game_json["isReplay"])
