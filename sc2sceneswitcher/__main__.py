@@ -141,8 +141,14 @@ class Runner:
             # when the sc2 client is first started
             game = get_game_details()
             if game is not None:
-                # toggle searching for the replay in Sc2ReplayStats
-                self.sc2rs.last_replay_found = False
+                if not game.is_replay:
+                    # toggle searching for the replay in Sc2ReplayStats
+                    self.sc2rs.last_replay_found = False
+                else:
+                    LOG.debug(
+                        "Skipping searching for sc2replaystats replay. "
+                        "Previous game was a replay so will not be re-uploaded."
+                    )
             else:
                 LOG.debug("Skipping searching for sc2replaystats replay")
 
