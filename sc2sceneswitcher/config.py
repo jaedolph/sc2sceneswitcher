@@ -43,7 +43,9 @@ class Config:
     def validate_sc2rs_section(self) -> None:
         """Validates the [SC2_REPLAY_STATS] section of the config."""
         try:
-            assert self.config.has_section("SC2_REPLAY_STATS")
+            assert self.config.has_section(
+                "SC2_REPLAY_STATS"
+            ), 'Could not find section "SC2_REPLAY_STATS"'
             assert isinstance(self.sc2rs_enabled, bool)
             if self.sc2rs_enabled:
                 assert self.is_non_empty_string(self.sc2rs_authkey)
@@ -54,7 +56,9 @@ class Config:
     def validate_switcher_section(self) -> None:
         """Validates the [SCENE_SWITCHER] section of the config."""
         try:
-            assert self.config.has_section("SCENE_SWITCHER")
+            assert self.config.has_section(
+                "SCENE_SWITCHER"
+            ), 'Could not find section "SCENE_SWITCHER"'
             assert isinstance(self.switcher_enabled, bool)
             if self.switcher_enabled:
                 assert self.is_non_empty_string(self.switcher_websocket_type)
@@ -85,9 +89,12 @@ class Config:
         """Validates the [TWITCH] section of the config."""
 
         try:
-            assert self.config.has_section("TWITCH")
+            assert self.config.has_section("TWITCH"), 'Could not find section "TWITCH"'
             assert isinstance(self.twitch_enabled, bool)
             if self.twitch_enabled:
+                assert (
+                    self.sc2rs_enabled
+                ), "SC2ReplayStats must be enabled to use the predictions feature"
                 assert self.is_non_empty_string(self.client_id)
                 assert self.is_non_empty_string(self.client_secret)
                 assert self.is_non_empty_string(self.broadcaster_name)

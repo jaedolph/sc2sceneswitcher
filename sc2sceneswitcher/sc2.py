@@ -2,7 +2,6 @@
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
 import requests
@@ -10,22 +9,13 @@ import requests
 LOG = logging.getLogger(__name__)
 
 
-class GameResult(Enum):
-    """Enum to store result of the SC2 game."""
-
-    UNDECIDED = 0
-    VICTORY = 1
-    DEFEAT = 2
-    TIE = 3
-
-
 @dataclass
 class Game:
     """Dataclass to store last game info."""
 
     # these are the only values relevant to the scene switcher bot
-    result: GameResult
-    is_replay: bool
+    decided: bool  # has the game finished yet?
+    is_replay: bool  # is the game a replay?
 
 
 def is_in_game() -> Optional[bool]:
@@ -66,23 +56,19 @@ def get_game_details() -> Optional[Game]:
         # (there will be none if the user has just logged in to SC2)
         assert len(game_json["players"]) > 0
 
-        # seems like the player is always the first result in the players list
+        # check if the game result is known
         result_string = game_json["players"][0]["result"]
 
         # ensure game result is valid
-        result = None
+        decided = None
         if result_string == "Undecided":
-            result = GameResult.UNDECIDED
-        if result_string == "Victory":
-            result = GameResult.VICTORY
-        if result_string == "Defeat":
-            result = GameResult.DEFEAT
-        if result_string == "Tie":
-            result = GameResult.TIE
+            decided = False
+        if result_string in ["Victory", "Defeat", "Tie"]:
+            decided = True
 
-        assert result is not None
+        assert decided is not None
 
-        return Game(result=result, is_replay=is_replay)
+        return Game(decided=decided, is_replay=is_replay)
 
     except (requests.exceptions.RequestException, KeyError, AssertionError) as exp:
         LOG.error("Could not check SC2 game details: %s", exp)

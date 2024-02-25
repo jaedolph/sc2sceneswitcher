@@ -7,7 +7,6 @@ from twitchAPI.twitch import Prediction, Twitch
 from twitchAPI.type import AuthScope, PredictionStatus, TwitchAPIException
 
 from sc2sceneswitcher.exceptions import SetupError
-from sc2sceneswitcher.sc2 import GameResult
 from sc2sceneswitcher.config import Config
 
 PREDICTION_WINDOW = 120
@@ -64,6 +63,16 @@ class Predictions:
                     self.broadcaster.id, prediction.id, PredictionStatus.CANCELED
                 )
 
+    async def lock_prediction(self, prediction: Prediction) -> None:
+        """Locks the prediction to not accept any additional bets.
+
+        :param prediction: prediction to lock
+        """
+        assert self.twitch is not None
+        await self.twitch.end_prediction(
+            self.broadcaster.id, prediction.id, PredictionStatus.LOCKED
+        )
+
     async def start_prediction(self) -> Prediction:
         """Starts a new prediction.
 
@@ -86,14 +95,13 @@ class Predictions:
 
         return prediction
 
-    async def end_prediction(self, prediction: Prediction, result: GameResult) -> None:
+    async def end_prediction(self, prediction: Prediction, streamer_won: bool) -> None:
         """Ends a specified prediction.
 
         :param prediction: prediction to end
-        :param result: the result of the game
+        :param streamer_won: True if the streamer won, False if they lost/tied
         """
 
-        assert result != GameResult.UNDECIDED
         assert self.twitch is not None
 
         win_id = None
@@ -105,7 +113,7 @@ class Predictions:
             if outcome.title == self.config.prediction_loss_option:
                 lose_id = outcome.id
 
-        if result == GameResult.VICTORY:
+        if streamer_won:
             winning_outcome_id = win_id
         else:
             winning_outcome_id = lose_id

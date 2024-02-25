@@ -1,14 +1,19 @@
 # sc2sceneswitcher
 
-Auto switch OBS scenes and create channel point predictions when joining a StarCraft II game.
+Auto switch scenes in your stream and create channel point predictions when joining a StarCraft II game.
 
-Features (all of these can be enabled or disabled as needed in configuration):
-* Auto switch scene in OBS or Streamlabs Desktop (SLOBS) when entering and exiting a game
+Features:
+* Auto switch scene in OBS or Streamlabs Desktop (SLOBS) when entering and exiting a game.
 * Auto start and payout channel point predictions (must be an Affiliate or Partner to use this feature).
-* Look up and display SC2ReplayStats info after a game (must have a Sc2ReplayStats account and have the auto uploader
+* Look up and display SC2ReplayStats info after a game (must have a SC2ReplayStats account and have the auto uploader
   running to use this feature). The replay info can be displayed by adding a "Text" source with "Read from file" and
   setting the path to "~/last_game.txt" (or whatever path you set in the configuration).
 
+To use the predictions feature you must also use the SC2ReplayStats feature. The internal SC2 client API gives very
+limited information that can be unreliable for determining the result of a game. SC2ReplayStats gives much more
+detailed information on the result of a game once the replay is parsed and uploaded. For best results I recommend
+using a "Premium" (paid) account for SC2ReplayStats as the replays will upload much faster (1-3 seconds rather than
+1-2 minutes) which will allow the predictions to be paid out faster.
 
 # Installation
 

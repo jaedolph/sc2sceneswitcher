@@ -19,7 +19,7 @@ from sc2sceneswitcher import setup_config
 from sc2sceneswitcher.config import DEFAULT_CONFIG_FILE_PATH, Config
 from sc2sceneswitcher.exceptions import ConfigError, SetupError
 from sc2sceneswitcher.predictions import Predictions
-from sc2sceneswitcher.sc2 import GameResult, get_game_details, is_in_game
+from sc2sceneswitcher.sc2 import get_game_details, is_in_game
 from sc2sceneswitcher.sc2replaystats import SC2ReplayStats
 from sc2sceneswitcher.switcher import Switcher
 
@@ -53,6 +53,8 @@ class Runner:
         self.switcher: Optional[Switcher] = None
         self.sc2rs: Optional[SC2ReplayStats] = None
         self.predictions: Optional[Predictions] = None
+        self.streamer_won: Optional[bool] = None
+
         # ensure graceful shutdown is handled on SIGINT and SIGTERM signals (only works for linux)
         try:
             signal.signal(signal.SIGINT, self.exit_gracefully)
@@ -85,7 +87,7 @@ class Runner:
             LOG.debug("Game is a replay, not starting prediction")
             return
 
-        if game.result != GameResult.UNDECIDED:
+        if game.decided:
             LOG.debug("Game is not in-progress, not starting prediction")
             return
 
@@ -93,6 +95,10 @@ class Runner:
             LOG.info("Starting prediction")
             assert self.predictions is not None
             self.prediction = await self.predictions.start_prediction()
+            # clear the last replay info so we get the right replay from sc2replaystats
+            # for this prediction
+            assert self.sc2rs is not None
+            self.sc2rs.clear_last_replay_info()
         except TwitchAPIException as exp:
             LOG.error("Failed to start prediction: %s", exp)
 
@@ -103,20 +109,18 @@ class Runner:
             LOG.error("Can't end prediction because no prediction exists.")
             return
 
-        game = get_game_details()
-        if not game:
-            LOG.error("Could not get game details, not ending prediction")
-            return
-
-        if game.result == GameResult.UNDECIDED:
-            LOG.debug("Game is in progress, not ending prediction")
+        if self.streamer_won is None:
+            LOG.error("Can't end prediction because result is not known yet.")
             return
 
         try:
-            LOG.info("Ending prediction result=%s", game.result.name)
+            result = "WIN" if self.streamer_won else "LOSS"
+            LOG.info("Ending prediction, result=%s", result)
             assert self.predictions is not None
-            await self.predictions.end_prediction(self.prediction, game.result)
+            await self.predictions.end_prediction(self.prediction, self.streamer_won)
             self.prediction = None
+            # Set streamer_won to None to show the game has not been decided yet
+            self.streamer_won = None
         except TwitchAPIException as exp:
             LOG.error("Failed to end prediction: %s", exp)
 
@@ -125,9 +129,9 @@ class Runner:
         # switch to in game scene
         if self.switcher:
             self.switcher.switch_to_in_game_scene()
-
-        # ensure we don't display old game info when the game is finished
-        if self.sc2rs:
+        if not self.predictions and self.sc2rs:
+            # if predictions are not enabled, we need to clear the last replay info when
+            # the game starts rather than when the prediction starts.
             self.sc2rs.clear_last_replay_info()
 
     async def on_game_exit(self) -> None:
@@ -152,6 +156,12 @@ class Runner:
             else:
                 LOG.debug("Skipping searching for sc2replaystats replay")
 
+        if self.predictions and self.prediction:
+            # lock the prediction on game exit so we can wait for a result from sc2replaystats
+            # This will be required for games that are shorter than the prediction window.
+            LOG.info("Locking prediction to wait for result from sc2replaystats.")
+            await self.predictions.lock_prediction(self.prediction)
+
     async def on_in_game(self) -> None:
         """Run tasks when the user is in game."""
         # if we are in a game and a prediction is not started, start one
@@ -160,20 +170,16 @@ class Runner:
 
     async def on_out_of_game(self) -> None:
         """Run tasks when the user is out of game."""
-
-        # if we are out of game and there is an active prediction that hasn't been paid out
-        if self.prediction and self.predictions:
-            # end the prediction
-            await self.end_prediction()
-
-        # if the last replay is not found from sc2replaystats, search for it
-        if self.sc2rs:
-            if not self.sc2rs.last_replay_found:
-                self.sc2rs.search_for_last_replay()
+        # currently not required
 
     async def on_every_loop(self) -> None:
         """Run tasks every poll loop."""
-        # currently not required
+
+        if self.sc2rs:
+            if not self.sc2rs.last_replay_found:
+                self.streamer_won = self.sc2rs.search_for_last_replay()
+                if self.prediction and self.predictions and self.streamer_won is not None:
+                    await self.end_prediction()
 
     async def poll(self) -> None:
         """Poll SC2 game status and run any required tasks."""
@@ -326,7 +332,7 @@ def main() -> None:
         log_level = logging.DEBUG
 
     if args.log_file:
-        log_handlers.append(logging.FileHandler(args.log_file, encoding='utf8'))
+        log_handlers.append(logging.FileHandler(args.log_file, encoding="utf8"))
 
     # add a filter to not log the OBS websocket password if we are not debug logging.
     if not args.debug:

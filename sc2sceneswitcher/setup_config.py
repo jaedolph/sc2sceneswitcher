@@ -73,17 +73,25 @@ def configure_sc2rs(config: Config) -> Config:
     :return: updated Config object
     """
 
-    config.sc2rs_enabled = input_bool(
-        "Would you like to enable integration with SC2ReplayStats? (yes/no): "
-    )
+    # automatically enable sc2replaystats if the user has enabled twitch predictions as it
+    # is required for the predictions to work.
+    if config.twitch_enabled:
+        config.sc2rs_enabled = True
+    else:
+        config.sc2rs_enabled = input_bool(
+            "Would you like to enable integration with SC2ReplayStats? (yes/no): "
+        )
+
     if not config.sc2rs_enabled:
         # don't configure SC2ReplayStats if the user doesn't need it
         return config
 
     print(
         "1. Sign in to https://sc2replaystats.com\n"
-        '2. Navigate to "My Account" -> "Settings" -> "API Access"\n'
-        '3. Copy your "Authorization Key"\n'
+        "2. Ensure you set up the uploader application from "
+        "https://sc2replaystats.com/account/download\n"
+        '3. Navigate to "My Account" -> "Settings" -> "API Access"\n'
+        '4. Copy your "Authorization Key" (you may need to click "Generate New API Key")\n'
     )
     input("\nPress `ENTER` when complete.")
     print("\n" * 5)
@@ -140,7 +148,7 @@ def configure_switcher(config: Config) -> Config:
             '1. Open Streamlabs desktop and go to "Settings" -> "Remote Control"\n'
             '2. Click the "Click to reveal" image\n'
             '3. Click "Show details"\n'
-            "4. Toggle visability of the API token"
+            "4. Toggle viability of the API token"
         )
         port_name = "Port"
         password_name = "API token"
@@ -271,23 +279,6 @@ async def configure(config_file_path: str) -> None:
             switcher_config_valid = False
 
     print("\n" * 5)
-    print("SC2REPLAYSTATS SETUP")
-    print("\n--------------------------")
-    sc2rs_config_valid = False
-    if config_valid:
-        sc2rs_config_valid = not input_bool(
-            "Sc2ReplayStats configuration is valid, would you like to update it? (yes/no): "
-        )
-    while not sc2rs_config_valid:
-        config = configure_sc2rs(config)
-        try:
-            config.validate_sc2rs_section()
-            sc2rs_config_valid = True
-        except ConfigError as exception:
-            print(f"\nERROR: invalid config {exception}\n")
-            sc2rs_config_valid = False
-
-    print("\n" * 5)
     print("TWITCH INTEGRATION SETUP")
     print("\n--------------------------")
 
@@ -310,12 +301,32 @@ async def configure(config_file_path: str) -> None:
             print("\n--------------------------")
             config = await configure_predictions(config)
 
+            # enable sc2replaystats as this is required for predictions to work and for the
+            # twitch configuration to validate
+            config.sc2rs_enabled = True
         try:
             config.validate_twitch_section()
             twitch_config_valid = True
         except ConfigError as exception:
             print(f"\nERROR: invalid config {exception}\n")
             twitch_config_valid = False
+
+    print("\n" * 5)
+    print("SC2REPLAYSTATS SETUP")
+    print("\n--------------------------")
+    sc2rs_config_valid = False
+    if config_valid:
+        sc2rs_config_valid = not input_bool(
+            "Sc2ReplayStats configuration is valid, would you like to update it? (yes/no): "
+        )
+    while not sc2rs_config_valid:
+        config = configure_sc2rs(config)
+        try:
+            config.validate_sc2rs_section()
+            sc2rs_config_valid = True
+        except ConfigError as exception:
+            print(f"\nERROR: invalid config {exception}\n")
+            sc2rs_config_valid = False
 
     print("\n" * 5)
     print(f"Writing config file to {config.config_file_path}...")
