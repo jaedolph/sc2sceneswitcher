@@ -40,7 +40,7 @@ class Switcher:
             except (ConnectionError, BrokenPipeError) as exp:
                 raise SetupError(f"Could not connect to OBS websocket: {exp}") from exp
         if self.config.switcher_websocket_type == "STREAMLABS":
-            LOG.info("Configuring Streamlabs Desktop websocket connection...")
+            LOG.info("Configuring Streamlabs Desktop connection...")
             try:
                 self.connect_to_streamlabs()
                 LOG.info("Getting scene IDs from streamlabs...")
@@ -64,7 +64,7 @@ class Switcher:
     def connect_to_streamlabs(self) -> None:
         """Attempt to connect to Streamlabs websocket."""
 
-        LOG.info("Connecting to Streamlabs API...")
+        LOG.info("Connecting to Streamlabs websocket...")
         self.streamlabs_ws_client = websocket.WebSocket()
         self.streamlabs_ws_client.connect(
             f"ws://127.0.0.1:{self.config.switcher_websocket_port}/api/websocket", timeout=5
@@ -84,7 +84,7 @@ class Switcher:
         LOG.debug("response: %s", response)
         if "error" in response.keys():
             raise ConnectionError(str(response["error"]))
-        LOG.info("Connected to Streamlabs API successfully")
+        LOG.info("Connected to Streamlabs websocket successfully")
 
     def reconnect_to_streamlabs(self) -> None:
         """Attempt to connect to Streamlabs websocket."""
