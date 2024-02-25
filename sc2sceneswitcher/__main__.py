@@ -176,8 +176,10 @@ class Runner:
         """Run tasks every poll loop."""
 
         if self.sc2rs:
+            # if required, check if the replay of the previous game is available
             if not self.sc2rs.last_replay_found:
                 self.streamer_won = self.sc2rs.search_for_last_replay()
+                # once the result of the game is known, pay out the prediction
                 if self.prediction and self.predictions and self.streamer_won is not None:
                     await self.end_prediction()
 
