@@ -26,12 +26,12 @@ class Switcher:
         self.obs_ws_client: Optional[obs.ReqClient] = None
         self.streamlabs_ws_client: Optional[websocket.WebSocket] = None
 
-        # for streamlabs, the unique id of the scene must be used (not just the namef)
+        # for streamlabs, the unique id of the scene must be used (not just the name)
         self.streamlabs_in_game_scene_id: Optional[str] = None
         self.streamlabs_out_of_game_scene_id: Optional[str] = None
 
     def setup(self) -> None:
-        """Setup connection to OBS websocket."""
+        """Setup connection to streaming program websocket."""
 
         if self.config.switcher_websocket_type == "OBS":
             LOG.info("Configuring OBS connection...")
