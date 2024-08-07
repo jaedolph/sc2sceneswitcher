@@ -18,7 +18,7 @@ class Game:
     is_replay: bool  # is the game a replay?
 
 
-def is_in_game() -> Optional[bool]:
+def is_in_game(show_load_screen: bool) -> Optional[bool]:
     """Check if the SC2 client is in game.
 
     :returns: True if in game, False if not in game, None if unknown
@@ -29,8 +29,13 @@ def is_in_game() -> Optional[bool]:
         ui = req.json()
         LOG.debug(ui)
         active_screens = ui["activeScreens"]
-        if active_screens and "ScreenLoading/ScreenLoading" not in active_screens:
+
+        if "ScreenLoading/ScreenLoading" in active_screens and show_load_screen:
+            return True
+
+        if active_screens:
             return False
+
         return True
     except requests.exceptions.RequestException as exp:
         LOG.error("Failed to check if in SC2 game, SC2 may not be running: %s", exp)

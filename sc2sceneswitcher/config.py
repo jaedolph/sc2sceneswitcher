@@ -67,6 +67,7 @@ class Config:
                 assert self.is_non_empty_string(self.switcher_websocket_password)
                 assert self.is_non_empty_string(self.in_game_scene)
                 assert self.is_non_empty_string(self.out_of_game_scene)
+                assert isinstance(self.show_load_screen, bool)
         except (configparser.Error, AssertionError, ValueError, KeyError) as exp:
             raise ConfigError(exp) from exp
 
@@ -264,5 +265,13 @@ class Config:
     @out_of_game_scene.setter
     def out_of_game_scene(self, value: str) -> None:
         self.config["SCENE_SWITCHER"]["OUT_OF_GAME_SCENE"] = value
+
+    @property
+    def show_load_screen(self) -> bool:
+        return self.config.getboolean("SCENE_SWITCHER", "SHOW_LOAD_SCREEN")
+
+    @show_load_screen.setter
+    def show_load_screen(self, value: bool) -> None:
+        self.config["SCENE_SWITCHER"]["SHOW_LOAD_SCREEN"] = "yes" if value else "no"
 
     # pylint: disable=

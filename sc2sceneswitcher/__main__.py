@@ -187,7 +187,7 @@ class Runner:
         """Poll SC2 game status and run any required tasks."""
 
         # check if in game
-        self.in_game = is_in_game()
+        self.in_game = is_in_game(self.config.show_load_screen)
         if self.in_game is None:
             # exit poll loop if we can't get the game state
             return
@@ -219,7 +219,7 @@ class Runner:
         while not setup_complete:
             try:
                 # make sure SC2 has been started
-                if is_in_game() is None:
+                if is_in_game(self.config.show_load_screen) is None:
                     raise SetupError("SC2 client is not responding yet, it may not be running")
 
                 # set up scene switcher

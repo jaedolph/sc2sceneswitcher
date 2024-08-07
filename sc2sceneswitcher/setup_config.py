@@ -174,7 +174,11 @@ def configure_switcher(config: Config) -> Config:
     config.out_of_game_scene = input(
         'What is the name of your "out of game" scene? e.g. "camera": '
     )
+    config.show_load_screen = input_bool(
+        'Would you like to show the loading screen in your "in game" scene? (yes/no): '
+    )
     print("\n" * 5)
+
     return config
 
 
