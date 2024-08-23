@@ -54,6 +54,7 @@ class Runner:
         self.sc2rs: Optional[SC2ReplayStats] = None
         self.predictions: Optional[Predictions] = None
         self.streamer_won: Optional[bool] = None
+        self.game_is_replay: Optional[bool] = None
 
         # ensure graceful shutdown is handled on SIGINT and SIGTERM signals (only works for linux)
         try:
@@ -134,6 +135,9 @@ class Runner:
             # the game starts rather than when the prediction starts.
             self.sc2rs.clear_last_replay_info()
 
+        # on first entering a game, it will be unknown if this is a replay or not
+        self.game_is_replay = None
+
     async def on_game_exit(self) -> None:
         """Run tasks when the user has just exited a game."""
         # switch to out of game scene
@@ -141,20 +145,21 @@ class Runner:
             self.switcher.switch_to_out_of_game_scene()
 
         if self.sc2rs:
-            # need to check if a game has been played to avoid an edge case that happens
-            # when the sc2 client is first started
-            game = get_game_details()
-            if game is not None:
-                if not game.is_replay:
-                    # toggle searching for the replay in Sc2ReplayStats
-                    self.sc2rs.last_replay_found = False
-                else:
-                    LOG.debug(
-                        "Skipping searching for sc2replaystats replay. "
-                        "Previous game was a replay so will not be re-uploaded."
-                    )
-            else:
-                LOG.debug("Skipping searching for sc2replaystats replay")
+            if self.game_is_replay is None:
+                # need to check if a game has been played to avoid an edge case that happens
+                # when the sc2 client is first started
+                LOG.debug(
+                    "Skipping searching for sc2replaystats replay. "
+                    "Cannot determine if last game was a replay or not."
+                )
+            if self.game_is_replay is False:
+                # toggle searching for the replay in Sc2ReplayStats
+                self.sc2rs.last_replay_found = False
+            if self.game_is_replay is True:
+                LOG.debug(
+                    "Skipping searching for sc2replaystats replay. "
+                    "Previous game was a replay so will not be re-uploaded."
+                )
 
         if self.predictions and self.prediction:
             # lock the prediction on game exit so we can wait for a result from sc2replaystats
@@ -164,8 +169,25 @@ class Runner:
 
     async def on_in_game(self) -> None:
         """Run tasks when the user is in game."""
-        # if we are in a game and a prediction is not started, start one
-        if self.predictions and self.prediction is None:
+
+        # Check if in a replay
+        if self.game_is_replay is None:
+            LOG.debug("Checking if game is a replay...")
+            game = get_game_details()
+            if game:
+                # If the game is showing as "decided", then the API is showing the previous game
+                # not the current game. This will happen if the player hit "quit and rewind" or
+                # watched a replay before this game.
+                if not game.decided:
+                    self.game_is_replay = game.is_replay
+                    LOG.debug("Game is replay: %s", self.game_is_replay)
+                else:
+                    LOG.debug("Game is 'decided'. Data received is not for the current game.")
+            else:
+                LOG.debug("Could not get game details yet.")
+
+        # if we are in a game, this is not a replay, and a prediction is not started, start one
+        if self.predictions and self.prediction is None and self.game_is_replay is False:
             await self.start_prediction()
 
     async def on_out_of_game(self) -> None:
