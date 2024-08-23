@@ -76,6 +76,7 @@ websocket_server_port = 4455 # port for the OBS websocket connection
 websocket_server_password = 1234567890abcdef # password for the OBS websocket connection
 in_game_scene = starcraft2 # name of in game scene in OBS
 out_of_game_scene = just-chatting # name of out of game scene in OBS
+show_load_screen = yes # set to "yes" to show the loading screen in your in game scene
 ```
 
 # Running with Podman

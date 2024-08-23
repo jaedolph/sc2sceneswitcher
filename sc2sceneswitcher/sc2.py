@@ -21,6 +21,7 @@ class Game:
 def is_in_game(show_load_screen: bool) -> Optional[bool]:
     """Check if the SC2 client is in game.
 
+    :param show_load_screen: if true, the loading screen counts as "in game"
     :returns: True if in game, False if not in game, None if unknown
     """
 
