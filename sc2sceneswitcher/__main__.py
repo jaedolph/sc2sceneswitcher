@@ -287,7 +287,7 @@ def run_setup_config(config_file_path: str) -> None:
         custom_exit(0)
     except Exception as exp:  # pylint: disable=broad-exception-caught
         traceback.print_tb(exp.__traceback__)
-        print(f"Fatal exception occurred: {exp}")
+        print(f"Fatal exception occurred: {type(exp).__name__} {exp}")
         custom_exit(1)
     custom_exit(0)
 
@@ -309,8 +309,8 @@ class NoPasswordFilter(logging.Filter):  # pylint: disable=too-few-public-method
         return True
 
 
-def main() -> None:
-    """Main entrypoint to the program."""
+def run() -> None:
+    """Run the program."""
 
     parser = argparse.ArgumentParser(
         prog="sc2sceneswitcher",
@@ -360,6 +360,17 @@ def main() -> None:
     runner = Runner(config)
 
     asyncio.run(runner.run(), debug=False)
+
+
+def main() -> None:
+    """Main entrypoint to the program."""
+
+    try:
+        run()
+    except Exception as exp:  # pylint: disable=broad-exception-caught
+        traceback.print_tb(exp.__traceback__)
+        print(f"Fatal exception occurred: {type(exp).__name__} - {exp}")
+        custom_exit(1)
 
 
 if __name__ == "__main__":
